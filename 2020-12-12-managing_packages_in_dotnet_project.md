@@ -6,7 +6,7 @@ So, post done, whats there to talk about?
 
 Well not so fast, [stay awhile and listen...](https://www.youtube.com/watch?v=tAVVy_x3Erg)
 
-## Paket - The alternative in the shadows of a giant?
+## Paket - The alternative in the shadow of a giant?
 
 In the company I'm working for the last 4 years (Gigya) we use a different package manager called [Paket](https://fsprojects.github.io/Paket/).
 The reason as to why it was chosen in the long distant past in no longer known for sure. However, we can make some educated guesses.
