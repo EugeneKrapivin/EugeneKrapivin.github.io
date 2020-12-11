@@ -22,6 +22,7 @@ So why paket? Well, its simple - paket had a centralized package version managem
 
 For deeper details of how to manage packages with paket I suggest you take peak at their site, its really easy.
 In a nut shell:
+
 * Put a `paket.dependencies` file in the solution root. This file declares the dependencies used throught the solution and thier version constrains.
 * Put a `paket.references` file in **each** project. This file declares the package references the specific project needs. This file has no version or source declarations, only names of packages.
 
@@ -33,7 +34,7 @@ But, alas, all that was not enough to convince anyone in Gigya to ditch paket an
 
 ### What felt wrong
 
-Well... Nothing really. All was sort of great. 
+Well... Nothing really. All was sort of great.
 
 I mean, the `csproj` files were cumbersome before, but after paket they really became unreadable. Paket did some magic, used assembly version redirect tricks and other stuff. But Mostly it worked kind of great.
 
@@ -43,13 +44,25 @@ Then came the SDK style project file. Gone was the `packages.config` file, now y
 
 With the sdk style projects came also some new features like the support for deafult `Directory.Build.props` and `Directory.Build.targets` files. We'll come back to them in a minute.
 
-And paket became too much magic. you no longer knew which packages the `csproj` referenced just from looking at it. you had to work with Visual Studio or begin digging through the `obj` folders to find the generated `csproj` files. The integration was a bit gritty. 
+And paket became too much magic. you no longer knew which packages the `csproj` referenced just from looking at it. you had to work with Visual Studio or begin digging through the `obj` folders to find the generated `csproj` files. The integration was a bit gritty.
 
 1. Paket was never a first class citizen in VS, but it was neither a first-class citizen in the dotnet CLI. Most importantly, it seemed that the community around it never took-off, so no tooling, no support from awesome tools like Dependabot or NuKeeper.
 2. It feels like in the end we didn't handle the DLL hell, we just postponed the reckoning since we didn't really change habbits. Internal libraries still referenced conflicting versions of the same transitive dependencies and we still had not real clue what version did end-up in our packages lock file.
 3. Most people really didn't understood how it worked and why. The complex dependency resolution rules were awesome, but only few understood how it all worked. It was especially felt when it didn't work.
 
 So, I decided to research what the world of package management in dotnet came up with in the last 4 years. Intersting journey.
+
+## Our story begins...
+
+Having thought about ditching paket for some time, I've decided to research a bit how other projects achieve this feat of managing their packages. So I've began looking at what open source projects do. Very quickly I've realised that many of the project have their own methods, non of which made much sense to the outsider. Some of the methods I've found:
+
+* use properties in a [central props file] and use those properties down the line in a [`csproj` or `Build.props` file](https://github.com/dotnet/orleans/blob/master/src/Orleans.Runtime/Directory.Build.props)
+* I still fail to understand how [asp.net source code](https://github.com/dotnet/aspnetcore) manages their packages, too complex.
+* NuKeeper has no centralized package version management at all, versions are "hard coded" in the `csproj` files
+
+It really did seem that most of the project we found were not using any kind of centralized package version management at all.
+
+My next place to check was the [dotnet/home gitter channel](https://gitter.im/dotnet/home) where I got [some help](https://gitter.im/dotnet/home?at=5f195e5aa4905773bfb70470), explaining a couple of methods I'd like to discuss here, after researching and trying them for some time.
 
 ## Does NuGet and MSBuild have a solution?
 
@@ -63,6 +76,7 @@ No - there is nothing out-of-the-box from NuGet at this stage (there is a beta f
 **Firstly, a short confession**: I'm not an MSBuild expert. The things bellow are things I learned and understood from trying things out. So, take it with a grain of salt.
 
 If you haven't really seen those files, or did see but didn't give them much thought, here are some resources:
+
 * [Customize your build](https://docs.microsoft.com/en-us/visualstudio/msbuild/customize-your-build?view=vs-2019)
 * [MS Build: Things You Should Know About Project Files](https://www.youtube.com/watch?v=5HEbsyU5E1g)
 
@@ -70,7 +84,7 @@ There are other great sources around, but those are a great place to start from.
 
 In short, those are files which the MSBuild process looks-up by default and applys them to your `csproj` file. The `props` are included in the beginning, the `targets` are included in the end of the process. This fact will be used to do some cetralized package version management.
 
-#### Cetralized package version management MSBuild style.
+#### Cetralized package version management MSBuild style
 
 We will use the fact that `target` files are applied in the end of the `csproj` and create a simple, yet powerfull, method to manage our packages centrally.
 
@@ -98,6 +112,7 @@ Packages can be included directly in the `.csproj` file (as seen in this example
 
 </Project>
 ```
+
 > **Note** that the `<PackageReference>` element lacks the `Version` property.
 
 Now, in the root of the solution we will add the magic sauce, the `targets` file. This file contains the `<PackageReference>` elements with the package version. However, instead of `Include` we use an `Update` property when defining the package name. The reason for this will be explained shortly.
@@ -114,6 +129,7 @@ Now, in the root of the solution we will add the magic sauce, the `targets` file
   </ItemGroup>
 </Project>
 ```
+
 > **Note** that the `<PackageReference>` element doesn't use the `Include` property but rather an `Update` property instead.
 
 Once we do a `dotnet restore` what happens is the MSBuild begins to prepare the project files for build, firstly applying and adding the `Directory.Build.props` (the first it finds) to the beginning, that way you can move all the meta data to it and leave the `csproj` file for things that are project oriented. In the end of the process the target files are applied.
@@ -146,6 +162,7 @@ It actually looks a lot like our `Directory.Build.targets` file
 
 Just notice that the `<PackageReference>` was changed to `<PackageVersion>` and the `Update` to `Include`.
 Another little thing you've got to do (since it's a preview feature) is to enabled this sort of centralized package version management by adding this short snippit to the `csproj` files, or alternatively to a central `Directory.Build.props` file.
+
 ```xml
 <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
