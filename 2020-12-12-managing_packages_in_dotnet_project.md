@@ -46,7 +46,7 @@ With the SDK style projects came also some new features like the support for def
 
 And paket became too much magic. you no longer knew which packages the `csproj` referenced just from looking at it. you had to work with Visual Studio or begin digging through the `obj` folders to find the generated `csproj` files. The integration was a bit gritty.
 
-1. Paket was never a first-class citizen in VS, but it was neither a first-class citizen in the dotnet CLI. Most importantly, it seemed that the community around it never took-off, so no tooling, no support from awesome tools like Dependabot or NuKeeper.
+1. Paket was never a first-class citizen in VS, but it was neither a first-class citizen in the dotnet CLI. Most importantly, it seemed that the community around it never took-off, so no tooling, no support from awesome tools like [Dependabot](https://dependabot.com/) or [NuKeeper](https://github.com/NuKeeperDotNet/NuKeeper).
 2. It feels like in the end, it didn't handle the DLL hell. It just postponed the reckoning since we didn't change habits. Internal libraries still referenced conflicting versions of the same transitive dependencies and I still had no real clue what version did end-up in our packages lock file.
 3. Most people didn't understand how it worked and why. The complex dependency resolution rules were awesome, but only a few understood how it all worked. It was especially felt when it didn't work.
 
