@@ -6,17 +6,19 @@ So, post done, what's there to talk about?
 
 Well not so fast, [stay awhile and listen...](https://www.youtube.com/watch?v=tAVVy_x3Erg)
 
+## Centralized package version management (or how to handle your DLL hell)
+
+In the past, DLL hell was a common thing in large dotnet solutions, especially legacy ones which had 100+ projects. The causes of the DLL hell varied from solution to solution, but their underlying cause was really simple: we had no clue which DLLs of dependent libraries were copied into the build folders.
+
+[Newtonsoft.Json](https://www.newtonsoft.com/json) was one culprit, but by far not the only one. Being an awesome JSON ser/des library that it is, it was used practically everywhere. But, alas, every library depends on a different version. Sometimes, even projects in the same solution could depend on different versions of newtonsoft (this is all pre consolidate feature in NuGet).
+So what did most of us do? yeah, [assembly version redirect](https://docs.microsoft.com/en-us/dotnet/framework/configure-apps/redirect-assembly-versions) the hell out of it and pray to the gods of the runtime to not crash.
+
+The thing we were missing is a tool to handle the dependency version resolution in a good way and a tool to manage the package versions used in the solution in a cetrallized way.
+
 ## Paket - The alternative in the shadow of a giant?
 
 In the company I've been working for the last 4 years (Gigya) we use a different package manager called [Paket](https://fsprojects.github.io/Paket/).
 The reason as to why it was chosen in the long distant past is no longer known for sure. However, we can make some educated guesses.
-
-### Centralized package version management (or how to handle your DLL hell)
-
-In the past, DLL hell was a common thing in large dotnet solutions, especially legacy ones which had 100+ projects. The causes of the DLL hell varied from solution to solution, but their underlying cause was really simple: we had no clue which DLLs of dependent libraries were copied into the build folders.
-
-[Newtonsoft.Json](https://www.newtonsoft.com/json) was one culprit, but by far not the only one. Being an awesome JSON ser/des library that it is, it was used practically everywhere. But, alas, every library depends on a different version. Sometimes, event projects in the same solution depend on different versions of newtonsoft. (this is all pre consolidate feature in NuGet).
-So what did most of us do? yeah, [assembly version redirect](https://docs.microsoft.com/en-us/dotnet/framework/configure-apps/redirect-assembly-versions) the hell out of it and pray to the gods of the runtime to not crash.
 
 So why paket? Well, it's simple - paket has a centralized package version management and a hell of a great dependency version resolution abilities, shadowing anything the NuGet package manager could provide at the time.
 
