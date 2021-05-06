@@ -6,6 +6,12 @@ So, post done, what's there to talk about?
 
 Well not so fast, [stay awhile and listen...](https://www.youtube.com/watch?v=tAVVy_x3Erg)
 
+## The TL:DR version
+
+Managing packages (and their versions) is something easily overlooked. However, understanding how to tame the beast will ensure that you use the same versions of packages across the whole solution and avoid the need to consolidate packages or suffer from DLL hell.
+
+Both NuGet and Paket allow you to manage your package versions centrally (i.e. you define the package version once for all projects in solution).
+
 ## Centralized package version management (or how to handle your DLL hell)
 
 In the past, DLL hell was a common thing in large dotnet solutions, especially legacy ones which had 100+ projects. The causes of the DLL hell varied from solution to solution, but their underlying cause was really simple: we had no clue which DLLs of dependent libraries were copied into the build folders.
@@ -49,8 +55,8 @@ With the SDK style projects came also some new features like the support for def
 And paket became too much magic. you no longer knew which packages the `csproj` referenced just from looking at it. you had to work with Visual Studio or begin digging through the `obj` folders to find the generated `csproj` files. The integration was a bit gritty.
 
 1. Paket was never a first-class citizen in VS, but it was neither a first-class citizen in the dotnet CLI. Most importantly, it seemed that the community around it never took-off, so no tooling, no support from awesome tools like [Dependabot](https://dependabot.com/) or [NuKeeper](https://github.com/NuKeeperDotNet/NuKeeper).
-2. It feels like in the end, it didn't handle the DLL hell. It just postponed the reckoning since we didn't change habits. Internal libraries still referenced conflicting versions of the same transitive dependencies and I still had no real clue what version did end-up in our packages lock file.
-3. Most people didn't understand how it worked and why. The complex dependency resolution rules were awesome, but only a few understood how it all worked. It was especially felt when it didn't work.
+1. It feels like in the end, it didn't handle the DLL hell. It just postponed the reckoning since we didn't change habits. Internal libraries still referenced conflicting versions of the same transitive dependencies and I still had no real clue what version did end-up in our packages lock file.
+1. Most people didn't understand how it worked and why. The complex dependency resolution rules were awesome, but only a few understood how it all worked. It was especially felt when it didn't work.
 
 So, I decided to research what the world of package management in dotnet came up in the last 4 years.
 
@@ -85,6 +91,8 @@ If you haven't seen those files, or did see them but didn't give them much thoug
 There are other great sources around, but those are a great place to start from.
 
 In short, those are files that the MSBuild process looks-up by default and applies to your `csproj` file. The `props` are included in the beginning, the `targets` are included at the end of the process. This fact will be used to do some centralized package version management.
+
+The `Directory.Build.props` file in general contains all the things you'd put into your `csproj` file. It is generally used to customize your build properties. For example, you could extract common project metadata into the file. The heirarchial nature of the file and how MSBuild scans for it, will ensure the metadata is added to all projects. The `Directory.Build.targets` is used for the same but with regards to build targets, which you could add in order to customize your build process.
 
 #### Centralized package version management MSBuild style
 
@@ -134,7 +142,7 @@ Now, in the root of the solution, we will add the magic sauce, the `targets` fil
 
 > **Note** that the `<PackageReference>` element doesn't use the `Include` property but rather an `Update` property instead.
 
-Once we do a `dotnet restore` what happens is the MSBuild begins to prepare the project files for the build, firstly applying and adding the `Directory.Build.props` (the first it finds) to the beginning, that way you can move all the metadata to it and leave the `csproj` file for things that are project-oriented. At the end of the process, the target files are applied.
+Once we do a `dotnet restore` what happens is the MSBuild begins to prepare the project files for the build. Firstly applying and adding the `Directory.Build.props` (the first it finds) to the beginning, that way you can move all the metadata to it and leave the `csproj` file for things that are project-oriented. At the end of the process, the target files are applied.
 
 Our little target file is residing in the root of the solution, not the project. Once MSBuild finds it, it begins running it. Each `<PackageReference>` element with an `Update` property will be matched against any existing `<PackageReference>` elements with the corresponding `Include` property, and update the element with the missing property - the version of the package.
 An important thing to notice is that `Update` is an update and not upsert (update-insert), i.e. packages that are not matched, will not be added to the csproj file.
@@ -190,6 +198,3 @@ The solutions are a lot cleaner and easier to understand. There is much less "ma
 The best win/gain for us was the ability to use [NuKeeper](https://github.com/NuKeeperDotNet/NuKeeper) to handle auto package updates via merge requests, something we just could not have done with paket.
 
 I hope that through this (not so short as I hoped) first post, you've got a glimpse into how to manage packages in your projects.
-
-
-
